@@ -39,9 +39,9 @@ DOWNLOAD_DELAY = 1
 #    "Accept-Language": "en",
 #}
 
-DEFAULT_REQUEST_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36"
-}
+# DEFAULT_REQUEST_HEADERS = {
+#     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36"
+# }
 
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
@@ -114,3 +114,9 @@ PLAYWRIGHT_LAUNCH_OPTIONS = {
 }
 
 # DOWNLOAD_TIMEOUT = 60
+
+PLAYWRIGHT_CONTEXTS = {
+    "regi_auth": {
+        "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+    }
+}
