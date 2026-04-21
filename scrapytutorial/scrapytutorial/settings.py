@@ -120,3 +120,8 @@ PLAYWRIGHT_CONTEXTS = {
         "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
     }
 }
+
+
+ITEM_PIPELINES = {
+    "scrapytutorial.pipelines.CsvProcessingPipeline": 300,
+}

@@ -1,6 +1,7 @@
 import scrapy
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
@@ -97,6 +98,7 @@ class AirRegiFormRequestSpider(scrapy.Spider):
             meta={
                 "playwright": True,
                 "playwright_context": "regi_auth",
+                "playwright_include_page": True,
             },
             callback=self.after_dashboard,
             dont_filter=True,
@@ -104,25 +106,101 @@ class AirRegiFormRequestSpider(scrapy.Spider):
 
 
 
-    def after_dashboard(self, response):
-        self.logger.info("🏠 DASHBOARD PAGE")
+    async def after_dashboard(self, response):
+        self.logger.info("DASHBOARD PAGE")
         self.logger.info(f"URL======>: {response.url}")
+
+        page = response.meta.get("playwright_page")
+        if not page:
+            self.logger.error("PAGE NOT FOUND")
+            return
 
         # Check for "ホーム"
         home = response.css("a[href='/dashboards']::text").get()
 
         if home and "ホーム" in home:
-            self.logger.info("🎉 DASHBOARD CONFIRMED")
+            self.logger.info("DASHBOARD CONFIRMED")
         else:
-            self.logger.error("❌ DASHBOARD NOT CONFIRMED")
+            self.logger.error("DASHBOARD NOT CONFIRMED")
 
+
+        # STEP 1: Go to Entries Page
+
+        await page.wait_for_selector("a[href='/entries']")
+        await page.click("a[href='/entries']")
+
+        #  Wait for Entries page via heading
+        await page.wait_for_selector("h1.styles_heading__3b3pw")
+
+        heading = await page.text_content("h1.styles_heading__3b3pw")
+
+        if "応募者" in heading:
+            self.logger.info("Entries page confirmed")
+        else:
+            self.logger.error("Entries page NOT CONFIRMED")
+            return
+
+
+        #  STEP 2: Build Date Range
+
+        date1 = "2000/1/11"
+        today = datetime.today()
+        date2 = f"{today.year}/{today.month}/{today.day}"
+        date_range = f"{date1} - {date2}"
+
+        self.logger.info(f"DATE RANGE: {date_range}")
+
+
+        # STEP 3: Set Date (React input)
+
+        await page.wait_for_selector("input[data-la='entries_search_calendar_input']")
+
+        await page.evaluate(
+            """(value) => {
+                const input = document.querySelector("input[data-la='entries_search_calendar_input']");
+                input.removeAttribute('readonly');
+                input.value = value;
+
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }""",
+            date_range,
+        )
+
+        self.logger.info("Date range applied")
+
+        # Wait for data refresh (important)
+        await page.wait_for_timeout(3000)
+
+        # Optional (if needed to trigger filter)
+        # await page.keyboard.press("Enter")
+        # await page.click("body")
+
+
+        # STEP 4: Download CSV
+        async with page.expect_download() as download_info:
+            await page.click("button[data-la='entries_download_btn_click']")
+
+        download = await download_info.value
+
+        file_path = f"./data/all_applicants.csv"
+        await download.save_as(file_path)
+
+        self.logger.info(f"CSV downloaded: {file_path}")
+
+
+
+        # await page.close()
         # Optional debug
         # self.logger.info(response.text[:500])
+
+        self.logger.info(f"CSV processed: started.....")
         yield {
             "status": "success",
             "message": "Dashboard confirmed",
-            "url": response.url,
             "home": home,
+            "file_path": file_path,
+            "date_range": date_range,
         }
 
 

@@ -2,3 +2,4 @@ scrapy
 scrapy-playwright
 python-dotenv
 # playwright install
+pandas
